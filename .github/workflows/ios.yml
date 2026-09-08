@@ -10,41 +10,41 @@ jobs:
         with:
           node-version: 22
 
-      - name: Create fresh Capacitor iOS app wrapping your site
+      - name: Build IPA in one step
         run: |
+          set -x
           rm -rf ios
+          rm -rf node_modules package-lock.json
           npm install @capacitor/core @capacitor/cli @capacitor/ios --legacy-peer-deps
           mkdir -p www
-          echo '<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0; url=https://food-delivery-arabic.web.app"></head></html>' > www/index.html
-
+          echo '<html><body>Loading Twelve...</body></html>' > www/index.html
+          
           cat > capacitor.config.json << 'JSON'
           {
             "appId": "com.twelve.customer",
             "appName": "Twelve Customer",
             "webDir": "www",
-            "server": {
-              "url": "https://food-delivery-arabic.web.app",
-              "cleartext": true
-            }
+            "server": { "url": "https://food-delivery-arabic.web.app", "cleartext": true }
           }
           JSON
+          
           npx cap add ios
-          npx cap sync ios
-          ls -la ios/App/
-          cat ios/App/Podfile | head -30
-
-      - name: Pod install
-        run: |
+          echo "=== AFTER ADD ==="
+          ls -R ios | head -100
+          
+          npx cap sync ios || true
+          echo "=== AFTER SYNC ==="
+          ls -la ios/App/ || true
+          find ios -name "Podfile" -o -name "*.xcworkspace" | head -20
+          
           cd ios/App
           pod install --repo-update
-
-      - name: Build IPA (no signing)
-        run: |
+          cd ../..
+          
           cd ios/App
           xcodebuild -workspace App.xcworkspace -scheme App -configuration Release -sdk iphoneos -derivedDataPath build clean archive -archivePath build/App.xcarchive CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
-
-      - name: Make IPA
-        run: |
+          cd ../..
+          
           mkdir -p /tmp/ipa/Payload
           cp -R ios/App/build/App.xcarchive/Products/Applications/App.app /tmp/ipa/Payload/
           cd /tmp/ipa
