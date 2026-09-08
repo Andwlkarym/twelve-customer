@@ -10,15 +10,12 @@ jobs:
         with:
           node-version: 22
 
-      - name: Build IPA in one step
+      - name: Build IPA without Pods
         run: |
-          set -x
           rm -rf ios
-          rm -rf node_modules package-lock.json
           npm install @capacitor/core @capacitor/cli @capacitor/ios --legacy-peer-deps
           mkdir -p www
           echo '<html><body>Loading Twelve...</body></html>' > www/index.html
-          
           cat > capacitor.config.json << 'JSON'
           {
             "appId": "com.twelve.customer",
@@ -27,19 +24,9 @@ jobs:
             "server": { "url": "https://food-delivery-arabic.web.app", "cleartext": true }
           }
           JSON
-          
           npx cap add ios
-          echo "=== AFTER ADD ==="
-          ls -R ios | head -100
-          
-          npx cap sync ios || true
-          echo "=== AFTER SYNC ==="
-          ls -la ios/App/ || true
-          find ios -name "Podfile" -o -name "*.xcworkspace" | head -20
-          
-          cd ios/App
-          pod install --repo-update
-          cd ../..
+          npx cap sync ios
+          ls -la ios/App/
           
           cd ios/App
           xcodebuild -workspace App.xcworkspace -scheme App -configuration Release -sdk iphoneos -derivedDataPath build clean archive -archivePath build/App.xcarchive CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
