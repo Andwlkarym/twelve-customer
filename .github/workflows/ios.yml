@@ -9,50 +9,50 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Install deps
+      
+      - name: Create fresh Capacitor iOS app wrapping your site
         run: |
-          npm install --legacy-peer-deps || npm install --force || true
-          npm i -g @capacitor/cli
-      - name: Build web and add iOS
-        run: |
-          ls -la
-          echo "--- trying build ---"
-          npm run build || npx vite build || npx next build || echo "no build script, using www"
+          npm init -y
+          npm install @capacitor/core @capacitor/cli @capacitor/ios
           mkdir -p www
-          echo "<html><body>Twelve Customer</body></html>" > www/index.html || true
-          echo "--- capacitor config ---"
-          cat capacitor.config.json 2>/dev/null || cat capacitor.config.ts 2>/dev/null || echo "no config found"
-          echo "--- add ios ---"
-          npx cap add ios || true
-          npx cap sync ios || true
-          echo "--- list ios ---"
-          ls -la ios/App/ || ls -la ios/ || echo "ios still missing"
-          find . -name Podfile -type f | head -20
+          echo '<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0; url=https://food-delivery-arabic.web.app"></head></html>' > www/index.html
+          
+          cat > capacitor.config.json << 'JSON'
+          {
+            "appId": "com.twelve.customer",
+            "appName": "Twelve Customer",
+            "webDir": "www",
+            "server": {
+              "url": "https://food-delivery-arabic.web.app",
+              "cleartext": true
+            }
+          }
+          JSON
+          cat capacitor.config.json
+          npx cap add ios
+          ls -la ios/App/
+          cat ios/App/Podfile | head -20
+
       - name: Pod install
         run: |
-          PODFILE=$(find . -name Podfile | head -1)
-          echo "Found Podfile at: $PODFILE"
-          DIR=$(dirname $PODFILE)
-          echo "Running pod install in $DIR"
-          cd $DIR
+          cd ios/App
           pod install --repo-update
-          cd -
-      - name: Build IPA
+          cd ../..
+
+      - name: Build IPA (no signing)
         run: |
-          XCODEPROJ=$(find ios -name "*.xcworkspace" | head -1)
-          echo "Workspace: $XCODEPROJ"
-          cd $(dirname $XCODEPROJ)
-          xcodebuild -workspace $(basename $XCODEPROJ) -scheme App -configuration Release -sdk iphoneos -derivedDataPath build clean archive -archivePath build/App.xcarchive CODE_SIGNING_ALLOWED=NO
+          cd ios/App
+          xcodebuild -workspace App.xcworkspace -scheme App -configuration Release -sdk iphoneos -derivedDataPath build clean archive -archivePath build/App.xcarchive CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
+
       - name: Make IPA
         run: |
-          XCARCHIVE=$(find ios -name "App.xcarchive" | head -1)
-          echo "Archive: $XCARCHIVE"
           mkdir -p /tmp/ipa/Payload
-          cp -R $XCARCHIVE/Products/Applications/App.app /tmp/ipa/Payload/
+          cp -R ios/App/build/App.xcarchive/Products/Applications/App.app /tmp/ipa/Payload/
           cd /tmp/ipa
           zip -r App-unsigned.ipa Payload
-          ls -lh App-unsigned.ipa
-      - name: Upload
+          ls -lh
+
+      - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
           name: App-ipa
