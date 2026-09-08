@@ -1,16 +1,52 @@
 name: Build iOS IPA
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+
 jobs:
   build:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+      
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build web
+        run: pnpm build || npm run build || echo "no build needed"
+
+      - name: Capacitor sync
+        run: npx cap sync ios
+
+      - name: Pod install
+        run: |
+          cd ios/App
+          pod install --repo-update
+          cd ../..
+
       - name: Build IPA (no signing)
         run: |
           cd ios/App
-          xcodebuild -workspace App.xcworkspace -scheme App -configuration Release -sdk iphoneos -derivedDataPath build clean archive -archivePath build/App.xcarchive CODE_SIGNING_ALLOWED=NO || xcodebuild -project App.xcodeproj -scheme App -configuration Release -sdk iphoneos -derivedDataPath build clean archive -archivePath build/App.xcarchive CODE_SIGNING_ALLOWED=NO
-          mkdir -p build/ipa/Payload
-          cp -r build/App.xcarchive/Products/Applications/App.app build/ipa/Payload/
-          cd build/ipa && zip -r App-unsigned.ipa Payload
-      - uses: actions/upload-artifact@v4
-        with: { name: ios-ipa, path: ios/App/build/ipa/App-unsigned.ipa }
+          xcodebuild -workspace App.xcworkspace -scheme App -configuration Release -sdk iphoneos -derivedDataPath build clean archive -archivePath build/App.xcarchive CODE_SIGNING_ALLOWED=NO
+
+      - name: Create IPA folder
+        run: |
+          mkdir -p ios/App/build/ipa/Payload
+          cp -R ios/App/build/App.xcarchive/Products/Applications/App.app ios/App/build/ipa/Payload/
+          cd ios/App/build/ipa
+          zip -r App-unsigned.ipa Payload
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: App-ipa
+          path: ios/App/build/ipa/App-unsigned.ipa
