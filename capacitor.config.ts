@@ -7,16 +7,18 @@ const config: CapacitorConfig = {
   server: {
     url: 'https://food-delivery-arabic.web.app',
     cleartext: true,
-    androidScheme: 'https',
-    iosScheme: 'https'
+    allowNavigation: [
+      'food-delivery-arabic.web.app',
+      '*.web.app',
+      'wa.me',
+      'api.whatsapp.com',
+      'whatsapp://*',
+      'tel:*'
+    ]
   },
   plugins: {
     SplashScreen: {
-      launchShowDuration: 2000,
-      backgroundColor: "#ffffff"
-    },
-    PushNotifications: {
-      presentationOptions: ["badge", "sound", "alert"]
+      launchShowDuration: 2000
     }
   }
 };
