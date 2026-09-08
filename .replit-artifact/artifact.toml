@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/twelve/"
+title = "Twelve Customer"
+description = "Firebase-backed Twelve Customer delivery app with customer, reception, and delivery interfaces."
+version = "1.0.0"
+id = "artifacts/twelve-app"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/twelve/" ]
+localPort = 19310
+
+[services.development]
+run = "pnpm --filter @workspace/twelve-app run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/twelve-app", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/twelve-app/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19310"
+BASE_PATH = "/twelve/"
