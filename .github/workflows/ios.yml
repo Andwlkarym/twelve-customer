@@ -9,14 +9,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      
+
       - name: Create fresh Capacitor iOS app wrapping your site
         run: |
-          npm init -y
-          npm install @capacitor/core @capacitor/cli @capacitor/ios
+          rm -rf ios
+          npm install @capacitor/core @capacitor/cli @capacitor/ios --legacy-peer-deps
           mkdir -p www
           echo '<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0; url=https://food-delivery-arabic.web.app"></head></html>' > www/index.html
-          
+
           cat > capacitor.config.json << 'JSON'
           {
             "appId": "com.twelve.customer",
@@ -28,16 +28,15 @@ jobs:
             }
           }
           JSON
-          cat capacitor.config.json
           npx cap add ios
+          npx cap sync ios
           ls -la ios/App/
-          cat ios/App/Podfile | head -20
+          cat ios/App/Podfile | head -30
 
       - name: Pod install
         run: |
           cd ios/App
           pod install --repo-update
-          cd ../..
 
       - name: Build IPA (no signing)
         run: |
