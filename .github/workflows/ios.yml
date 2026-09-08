@@ -9,36 +9,29 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-
-      - name: Build IPA without Pods
+      - name: Build IPA
         run: |
-          rm -rf ios
+          rm -rf ios www
           npm install @capacitor/core @capacitor/cli @capacitor/ios --legacy-peer-deps
           mkdir -p www
-          echo '<html><body>Loading Twelve...</body></html>' > www/index.html
-          cat > capacitor.config.json << 'JSON'
-          {
-            "appId": "com.twelve.customer",
-            "appName": "Twelve Customer",
-            "webDir": "www",
-            "server": { "url": "https://food-delivery-arabic.web.app", "cleartext": true }
-          }
-          JSON
+          echo '<html></html>' > www/index.html
+          echo '{"appId":"com.twelve.customer","appName":"Twelve Customer","webDir":"www","server":{"url":"https://food-delivery-arabic.web.app","cleartext":true}}' > capacitor.config.json
           npx cap add ios
           npx cap sync ios
           ls -la ios/App/
           
           cd ios/App
-          xcodebuild -workspace App.xcworkspace -scheme App -configuration Release -sdk iphoneos -derivedDataPath build clean archive -archivePath build/App.xcarchive CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
-          cd ../..
+          xcodebuild -project App.xcodeproj -scheme App -configuration Release -sdk iphoneos -derivedDataPath build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO -destination "generic/platform=iOS" build
           
           mkdir -p /tmp/ipa/Payload
-          cp -R ios/App/build/App.xcarchive/Products/Applications/App.app /tmp/ipa/Payload/
+          APP=$(find build -name "*.app" | head -1)
+          echo "Found app at $APP"
+          cp -R "$APP" /tmp/ipa/Payload/
           cd /tmp/ipa
           zip -r App-unsigned.ipa Payload
           ls -lh
 
-      - name: Upload IPA
+      - name: Upload
         uses: actions/upload-artifact@v4
         with:
           name: App-ipa
