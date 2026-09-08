@@ -6,16 +6,23 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Node 22
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
       - name: Install Capacitor
         run: npm i -g @capacitor/cli
       - name: Install deps
         run: npm install --legacy-peer-deps || true
-      - name: Sync iOS
-        run: npx cap sync ios || npx cap copy ios
+      - name: Add iOS platform if missing
+        run: |
+          ls -la
+          cat capacitor.config.* || echo "no config"
+          if [ ! -d "ios" ]; then
+            echo "Adding ios platform..."
+            npx cap add ios || npm run cap:add:ios || true
+          fi
+          npx cap sync ios || npx cap copy ios || true
+          ls -la ios/App/ || ls -la ios/ || echo "still no ios"
       - name: Pod install
         run: |
           cd ios/App
